@@ -1,11 +1,10 @@
 import App from "next/app";
-import Nav from "../src/components/nav/nav";
+import Nav from "../src/components/nav";
 import { AppContextProvider } from "../src/context/app.context";
 import { ThemeProvider } from "@material-ui/styles";
 import { CssBaseline } from "@material-ui/core";
 import { responsiveFontSizes } from "@material-ui/core/styles";
 import theme from "../src/theme";
-import "typeface-roboto";
 
 class MyApp extends App {
   // Only uncomment this method if you have blocking data requirements for
