@@ -18,6 +18,7 @@ const os = require("os");
 const logger = require("morgan");
 /* ### require in routes */
 const authRouter = require("./routes/auth");
+const profileRouter = require("./routes/profile");
 
 require("dotenv").config();
 const port = process.env.PORT || 3000;
@@ -123,6 +124,7 @@ app.prepare().then(() => {
 
   /* #### apply routes with middleware from routes folder */
   authRouter(server);
+  profileRouter(server);
 
   /* Error handling from async / await functions */
   server.use((err, req, res, next) => {

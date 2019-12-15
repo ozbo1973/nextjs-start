@@ -1,14 +1,16 @@
-/* ### Chnage the routes and url param vars */
-const SIGNUP_URL = "/api/signup";
+/* imports */
 const ctl = require("../controllers/auth.controller");
+const auth = require("../middlewares/auth.middleware");
 
-/* Error handler for async / await functions */
-const catchErrors = fn => {
-  return function(req, res, next) {
-    return fn(req, res, next).catch(next);
-  };
-};
+/* vars and fx */
+const SIGNUP_URL = "/api/signup";
+const LOGIN_URL = "/api/login";
+const LOGOUT_URL = "/api/logout";
+const LOGOUT_ALL_URL = "/api/logoutAll";
 
 module.exports = app => {
   app.post(SIGNUP_URL, ctl.signup);
+  app.post(LOGIN_URL, ctl.login);
+  app.post(LOGOUT_URL, auth, ctl.logout);
+  app.post(LOGOUT_ALL_URL, auth, ctl.logoutAll);
 };

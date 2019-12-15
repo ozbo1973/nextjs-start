@@ -1,43 +1,53 @@
-const HAS_EXISTING_USER = "The following has already been used: ";
-const MISSING_REQUIRE_FIELD = "You must input email, username and password.";
-
 /* imports */
-const User = require("../models/user.schema");
+const Users = require("../models/user.schema");
+
+/* vars and fx */
+const MSG_LOGGED_OUT = "You have successfully logged out on this device.";
+const MSG_LOGGED_OUT_ALL = "You have successfully logged out of all devices.";
 
 /* conrollers */
-exports.getAlllxxx = async (req, res) => {};
-
 exports.signup = async (req, res, next) => {
-  const { email, username, password } = req.body;
-
-  if (!email || !username || !passsword) {
-    return res.status(422).json({ errMsg: MISSING_REQUIRE_FIELD });
-  }
-
   try {
-    const existingUser = await User.findOne({
-      $or: [{ email: email }, { username: username }]
-    });
+    const newUser = await Users.createNewUser(req.body);
+    const { status, user, errMsg } = newUser;
 
-    if (existingUser) {
-      return res.status(406).json({
-        errMsg: `${HAS_EXISTING_USER} ${existingUser.email &&
-          "email: " + existingUser.email} ${existingUser.username &&
-          "username: " + existingUser.username}`
-      });
+    if (!user) {
+      return res.status(status).send({ errMsg });
     }
 
-    const newUser = await User.create({ email, username, password });
-    res.json({ newUser });
+    res.status(status).send({ user, token: newUser.token });
   } catch (error) {
-    res.send(500).json({ errMsg: error });
+    res.status(400).send({ errMsg: error.message });
   }
 };
 
-exports.createXXX = async (req, res) => {};
+exports.login = async (req, res, next) => {
+  try {
+    const user = await Users.findByCreds(req.body.username, req.body.password);
+    const token = await user.generateAuthToken();
 
-exports.updateXXX = async (req, res) => {};
+    res.status(200).send({ user, token });
+  } catch (error) {
+    res.status(400).send({ errMsg: error.message });
+  }
+};
 
-exports.deleteLinksDocs = async (req, res) => {};
+exports.logout = async (req, res, next) => {
+  try {
+    await req.user.logout(req.userToken);
+    res.status(200).send({ msg: MSG_LOGGED_OUT });
+  } catch (error) {
+    res.status(400).send({ errMsg: error.message });
+  }
+};
+
+exports.logoutAll = async (req, res, next) => {
+  try {
+    await req.user.logout("all");
+    res.status(200).send({ msg: MSG_LOGGED_OUT_ALL });
+  } catch (error) {
+    res.status(400).send({ errMsg: error.message });
+  }
+};
 
 module.exports = exports;
