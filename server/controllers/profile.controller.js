@@ -11,8 +11,9 @@ exports.myProfile = async (req, res, next) => {
 
 exports.editProfile = async (req, res, next) => {
   const body = req.body;
+  const allowedUpdates = ["email", "username", "password"];
   const changes = Object.keys(body).reduce((acc, obj) => {
-    if (body[obj]) {
+    if (body[obj] && allowedUpdates.includes(acc[obj])) {
       acc[obj] = body[obj];
     }
     return acc;
