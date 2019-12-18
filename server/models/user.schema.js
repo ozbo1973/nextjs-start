@@ -16,9 +16,14 @@ const hasExistingUserMsg = ({ email, username }) =>
 
 /* Schema model */
 const userSchema = new mongoose.Schema({
-  username: { type: String, unique: true, lowercase: true, required: true },
-  email: { type: String, unique: true, lowercase: true, required: true },
-  password: { type: String, required: true },
+  jwt: {
+    username: { type: String, unique: true, lowercase: true },
+    email: { type: String, unique: true, lowercase: true },
+    password: { type: String }
+  },
+  oauth: {
+    google: { type: String }
+  },
   tokens: [
     {
       token: {
@@ -33,8 +38,8 @@ const userSchema = new mongoose.Schema({
 userSchema.methods.toJSON = function() {
   const user = this;
   const userObj = user.toObject();
-  delete userObj.password;
-  delete userObj.tokens;
+  delete userObj.jwt.password;
+  delete userObj.jwt.tokens;
 
   return userObj;
 };
@@ -63,32 +68,53 @@ userSchema.methods.logout = async function(devices) {
 userSchema.pre("save", async function(next) {
   const user = this;
 
-  if (user.isModified("password")) {
-    user.password = await bcrypt.hash(user.password, 8);
+  if (user.isModified("jwt.password")) {
+    user.jwt.password = await bcrypt.hash(user.jwt.password, 8);
   }
 });
 
 /* statics */
-userSchema.statics.hasExistingUser = async ({ email, username }) => {
-  const existingUser = await Users.findOne({
-    $or: [{ email }, { username }]
-  });
-
-  if (!existingUser) {
-    return null;
+userSchema.statics.hasExistingUser = async criteria => {
+  try {
+    const existingUser = await Users.findOne(criteria);
+    return existingUser
+      ? { user: true, errMsg: null }
+      : { user: false, errMsg: null };
+  } catch (error) {
+    return { user: null, errMsg: error.message };
   }
-
-  const match = {};
-  match.email = email === existingUser.email ? email : null;
-  match.username = username === existingUser.username ? username : null;
-  return hasExistingUserMsg(match);
 };
 
-userSchema.statics.createNewUser = async newUser => {
+userSchema.statics.creatUserOauth = async config => {
+  //check for existing provider id
+};
+
+userSchema.statics.createUser_JWT = async newUser => {
   const { email, username, password } = newUser;
+  const jwtUser = { jwt: { ...newUser } };
+
   if (!email || !username || !password) {
     return { status: 422, user: null, errMsg: MSG_MISSING_REQUIRED_FIELDS };
   }
+
+  const hasExistingUser = await Users.hasExistingUser({
+    $or: [{ jwt: { email } }, { jwt: { username } }]
+  });
+
+  if (hasExistingUserMsg.errMsg) {
+    throw new Error(errMsg);
+  }
+
+  if (hasExistingUser.user) {
+    return { status: 406, user: null, errMsg: existingUser };
+  }
+
+  const user = await Users.create(jwtUser);
+  const token = await user.generateAuthToken();
+  return { status: 201, user, token, errMsg: null };
+};
+
+userSchema.statics.createNewUser = async (newUser, provider) => {
   const existingUser = await Users.hasExistingUser(newUser);
 
   if (existingUser) {
@@ -115,13 +141,13 @@ userSchema.statics.findByCreds = async (username, password) => {
     throw new Error(MSG_MISSING_LOGIN_FIELDS);
   }
 
-  const user = await Users.findOne({ username });
+  const user = await Users.findOne({ jwt: { username } });
 
   if (!user) {
     throw new Error(MSG_UNABLE_LOGIN);
   }
 
-  const isMatch = bcrypt.compare(password, user.password);
+  const isMatch = bcrypt.compare(password, user.jwt.password);
 
   if (!isMatch) {
     throw new Error(MSG_UNABLE_LOGIN);

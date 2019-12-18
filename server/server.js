@@ -1,26 +1,25 @@
-/* ## change Dev database name */
-const DEV_DATABASE_URI = "mongodb://127.0.0.1:27017/some-app";
-const DB_CONNECTED = "Congrats,The database is connected.";
-const DB_CONNECTION_ERROR = "Database Connection Error: ";
-const PRODUCTION = "production";
-
+/* imports */
 const express = require("express");
 const next = require("next");
 const mongoose = require("mongoose");
 const formData = require("express-form-data");
 const os = require("os");
+const passport = require("passport");
 // const expressValidator = require("express-validator");
 // const helmet = require("helmet");
 // const compression = require("compression");
 // const mongoSessionStore = require("connect-mongo");
 // const session = require("express-session");
-// const passport = require("passport");
 const logger = require("morgan");
-/* ### require in routes */
-const authRouter = require("./routes/auth");
-const profileRouter = require("./routes/profile");
 
 require("dotenv").config();
+require("./services/passport");
+
+/* ## vars and fx */
+const DEV_DATABASE_URI = "mongodb://127.0.0.1:27017/some-app";
+const DB_CONNECTED = "Congrats,The database is connected.";
+const DB_CONNECTION_ERROR = "Database Connection Error: ";
+const PRODUCTION = "production";
 const port = process.env.PORT || 3000;
 const dev = process.env.NODE_ENV !== PRODUCTION;
 const dbConnect = dev ? DEV_DATABASE_URI : process.env.MONGO_URI;
@@ -44,7 +43,6 @@ mongoose.connection.on("error", err => {
 });
 
 /* Set up Express */
-
 app.prepare().then(() => {
   const server = express();
 
@@ -122,9 +120,9 @@ app.prepare().then(() => {
     })
   );
 
-  /* #### apply routes with middleware from routes folder */
-  authRouter(server);
-  profileRouter(server);
+  /* #### require routes */
+  require("./routes/auth")(server);
+  require("./routes/profile")(server);
 
   /* Error handling from async / await functions */
   server.use((err, req, res, next) => {

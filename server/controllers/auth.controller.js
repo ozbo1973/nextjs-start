@@ -8,14 +8,14 @@ const MSG_LOGGED_OUT_ALL = "You have successfully logged out of all devices.";
 /* conrollers */
 exports.signup = async (req, res, next) => {
   try {
-    const newUser = await Users.createNewUser(req.body);
-    const { status, user, errMsg } = newUser;
+    const newUser = await Users.createUser_JWT(req.body);
+    const { status, user, token, errMsg } = newUser;
 
     if (!user) {
       return res.status(status).send({ errMsg });
     }
 
-    res.status(status).send({ user, token: newUser.token });
+    res.status(status).send({ user, token });
   } catch (error) {
     res.status(400).send({ errMsg: error.message });
   }
